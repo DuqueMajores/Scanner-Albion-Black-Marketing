@@ -186,7 +186,7 @@
 <body>
 
   <div class="container">
-    <h1>Scanner de Mercado - Caerleon</h1>
+    <h1>Scanner de Mercado Real-Time - Caerleon</h1>
 
     <div class="panel">
       <div class="panel-title">1. Configurações de Compra e Venda</div>
@@ -203,20 +203,20 @@
         <div class="form-group">
           <label for="sourceCity">Cidade de Compra</label>
           <select id="sourceCity">
-            <option value="Caerleon">Caerleon (Mercado Local / Flip)</option>
+            <option value="Martlock">Martlock</option>
             <option value="Bridgewatch">Bridgewatch</option>
             <option value="Fort Sterling">Fort Sterling</option>
             <option value="Lymhurst">Lymhurst</option>
-            <option value="Martlock">Martlock</option>
             <option value="Thetford">Thetford</option>
+            <option value="Caerleon">Caerleon (Flip Interno)</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="sellStrategy">Estratégia de Venda em Caerleon</label>
-          <select id="sellStrategy">
-            <option value="buy_order">Venda Imediata (Ordem de Compra em Caerleon)</option>
-            <option value="sell_order">Criar Ordem de Venda (Preço Realista)</option>
+          <label for="buyType">Modo de Compra na Origem</label>
+          <select id="buyType">
+            <option value="instant">Compra Instantânea (Ordem de Venda mais barata)</option>
+            <option value="order">Criar Ordem de Compra (Mais Barato / Requer Espera)</option>
           </select>
         </div>
 
@@ -227,7 +227,7 @@
 
         <div class="form-group checkbox-group">
           <input type="checkbox" id="hasPremium" checked>
-          <label for="hasPremium">Possui Premium? (4% taxa)</label>
+          <label for="hasPremium">Possui Premium? (4% taxa de venda)</label>
         </div>
       </div>
     </div>
@@ -238,7 +238,7 @@
         
         <div class="form-group full-width">
           <label for="searchName">Pesquisa por Nome ou ID Interno</label>
-          <input type="text" id="searchName" placeholder="Ex: Espada, Capa, Garra, Poção, Sapatos, Leather, Wood...">
+          <input type="text" id="searchName" placeholder="Ex: Espada, Capa, Garra, Poção, Leather, Wood, Bar...">
         </div>
 
         <div class="form-group">
@@ -302,11 +302,11 @@
             <tr>
               <th style="text-align: center;">Item</th>
               <th>Compra (Origem)</th>
-              <th>Venda (Caerleon)</th>
-              <th>Qtd. Recomendada</th>
+              <th>Venda Est. (Caerleon)</th>
+              <th>Qtd. Máxima</th>
               <th>Investimento Total</th>
-              <th>Lucro Líquido</th>
-              <th>Atualização</th>
+              <th>Lucro Líquido Est.</th>
+              <th>Atualização em Caerleon</th>
             </tr>
           </thead>
           <tbody id="resultsBody">
@@ -412,7 +412,7 @@
     async function runScanner() {
       const server = document.getElementById("server").value;
       const sourceCity = document.getElementById("sourceCity").value;
-      const sellStrategy = document.getElementById("sellStrategy").value;
+      const buyType = document.getElementById("buyType").value;
       const budget = parseFloat(document.getElementById("budget").value);
       const quality = document.getElementById("quality").value;
       const hasPremium = document.getElementById("hasPremium").checked;
@@ -461,7 +461,8 @@
         resultsArray.flat().forEach(entry => {
           if (!marketData[entry.item_id]) {
             marketData[entry.item_id] = { 
-              sourcePrice: 0, 
+              sourceSellMin: 0, 
+              sourceBuyMax: 0,
               caerleonSellMin: 0,
               caerleonBuyMax: 0,
               updatedAt: null 
@@ -469,12 +470,13 @@
           }
 
           if (entry.city === sourceCity) {
-            marketData[entry.item_id].sourcePrice = entry.sell_price_min;
+            marketData[entry.item_id].sourceSellMin = entry.sell_price_min; // Ordem de venda na origem
+            marketData[entry.item_id].sourceBuyMax = entry.buy_price_max;   // Ordem de compra na origem
           }
           
           if (entry.city === targetCity) {
-            marketData[entry.item_id].caerleonSellMin = entry.sell_price_min;
-            marketData[entry.item_id].caerleonBuyMax = entry.buy_price_max;
+            marketData[entry.item_id].caerleonSellMin = entry.sell_price_min; // Preço de mercado em Caerleon
+            marketData[entry.item_id].caerleonBuyMax = entry.buy_price_max;   // Venda instantânea em Caerleon
             marketData[entry.item_id].updatedAt = entry.sell_price_min_date;
           }
         });
@@ -482,16 +484,17 @@
         const opportunities = [];
 
         for (const itemId in marketData) {
-          const buyPrice = marketData[itemId].sourcePrice;
-          
-          let sellPrice = 0;
-          if (sellStrategy === "buy_order") {
-            sellPrice = marketData[itemId].caerleonBuyMax;
-          } else {
-            sellPrice = marketData[itemId].caerleonSellMin;
-            if (sellPrice > buyPrice * 3) {
-              sellPrice = 0;
-            }
+          // Define o preço de compra na origem com base na escolha do usuário
+          const buyPrice = buyType === "instant" 
+            ? marketData[itemId].sourceSellMin 
+            : marketData[itemId].sourceBuyMax;
+
+          const caerleonMarketPrice = marketData[itemId].caerleonSellMin;
+
+          // Validação: Descarta se o preço em Caerleon for mais de 2.5x o preço de origem (Evita anomalias/preços de 2 milhões)
+          let sellPrice = caerleonMarketPrice;
+          if (sellPrice > buyPrice * 2.5) {
+            sellPrice = 0;
           }
 
           if (buyPrice > 0 && sellPrice > 0 && buyPrice <= budget) {
@@ -521,7 +524,7 @@
         resultsPanel.classList.remove("hidden");
 
         if (opportunities.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Nenhuma oportunidade encontrada para a combinação selecionada.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Nenhuma oportunidade encontrada. Tente alterar o "Modo de Compra" para "Criar Ordem de Compra" ou selecionar outra cidade de origem.</td></tr>`;
           statusEl.innerText = "Varredura concluída.";
           return;
         }
@@ -547,7 +550,7 @@
           tbody.appendChild(tr);
         });
 
-        statusEl.innerText = `Varredura concluída! ${opportunities.length} oportunidades verificadas.`;
+        statusEl.innerText = `Varredura concluída! ${opportunities.length} oportunidades encontradas.`;
 
       } catch (error) {
         console.error(error);
@@ -569,4 +572,3 @@
   </script>
 </body>
 </html>
-
