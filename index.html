@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Albion Online - Scanner Real-Time Caerleon</title>
+  <title>Albion Online - Scanner de Flip Completo</title>
   <style>
     :root {
       --bg-color: #121418;
@@ -186,10 +186,10 @@
 <body>
 
   <div class="container">
-    <h1>Scanner de Mercado Real-Time - Caerleon</h1>
+    <h1>Scanner de Flip Completo (Sem Limite de Silver)</h1>
 
     <div class="panel">
-      <div class="panel-title">1. Configurações de Compra e Venda</div>
+      <div class="panel-title">1. Configurações Globais</div>
       <div class="form-grid">
         <div class="form-group">
           <label for="server">Servidor</label>
@@ -200,45 +200,27 @@
           </select>
         </div>
 
-        <div class="form-group">
-          <label for="sourceCity">Cidade de Compra</label>
-          <select id="sourceCity">
-            <option value="Martlock">Martlock</option>
-            <option value="Bridgewatch">Bridgewatch</option>
-            <option value="Fort Sterling">Fort Sterling</option>
-            <option value="Lymhurst">Lymhurst</option>
-            <option value="Thetford">Thetford</option>
-            <option value="Caerleon">Caerleon (Flip Interno)</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="buyType">Modo de Compra na Origem</label>
-          <select id="buyType">
-            <option value="instant">Compra Instantânea (Ordem de Venda mais barata)</option>
-            <option value="order">Criar Ordem de Compra (Mais Barato / Requer Espera)</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="budget">Orçamento (Silver)</label>
-          <input type="number" id="budget" value="1000000" min="1000" step="50000">
-        </div>
-
         <div class="form-group checkbox-group">
           <input type="checkbox" id="hasPremium" checked>
-          <label for="hasPremium">Possui Premium? (4% taxa de venda)</label>
+          <label for="hasPremium">Possui Premium? (4% taxa total)</label>
         </div>
       </div>
     </div>
 
     <div class="panel">
-      <div class="panel-title">2. Filtro de Itens (Mercado)</div>
+      <div class="panel-title">2. Filtros do Mercado Local</div>
       <div class="form-grid">
         
-        <div class="form-group full-width">
-          <label for="searchName">Pesquisa por Nome ou ID Interno</label>
-          <input type="text" id="searchName" placeholder="Ex: Espada, Capa, Garra, Poção, Leather, Wood, Bar...">
+        <div class="form-group">
+          <label for="city">Cidade para Análise</label>
+          <select id="city">
+            <option value="Caerleon">Caerleon</option>
+            <option value="Bridgewatch">Bridgewatch</option>
+            <option value="Fort Sterling">Fort Sterling</option>
+            <option value="Lymhurst">Lymhurst</option>
+            <option value="Martlock">Martlock</option>
+            <option value="Thetford">Thetford</option>
+          </select>
         </div>
 
         <div class="form-group">
@@ -288,9 +270,14 @@
           </select>
         </div>
 
+        <div class="form-group full-width">
+          <label for="searchName">Pesquisa por Nome ou ID Interno</label>
+          <input type="text" id="searchName" placeholder="Ex: Espada, Capa, Garra, Poção, Leather, Wood, Bar...">
+        </div>
+
       </div>
 
-      <button id="scanBtn" onclick="runScanner()">Escanear Oportunidades</button>
+      <button id="scanBtn" onclick="runScanner()">Escanear Todos os Flips</button>
     </div>
 
     <div id="status" class="status">Ajuste os filtros e clique em Escanear.</div>
@@ -301,12 +288,11 @@
           <thead>
             <tr>
               <th style="text-align: center;">Item</th>
-              <th>Compra (Origem)</th>
-              <th>Venda Est. (Caerleon)</th>
-              <th>Qtd. Máxima</th>
-              <th>Investimento Total</th>
-              <th>Lucro Líquido Est.</th>
-              <th>Atualização em Caerleon</th>
+              <th>Ordem de Compra (Custo)</th>
+              <th>Ordem de Venda (Preço)</th>
+              <th>Lucro Líquido / Unid.</th>
+              <th>Margem (%)</th>
+              <th>Atualização</th>
             </tr>
           </thead>
           <tbody id="resultsBody">
@@ -411,22 +397,14 @@
 
     async function runScanner() {
       const server = document.getElementById("server").value;
-      const sourceCity = document.getElementById("sourceCity").value;
-      const buyType = document.getElementById("buyType").value;
-      const budget = parseFloat(document.getElementById("budget").value);
+      const city = document.getElementById("city").value;
       const quality = document.getElementById("quality").value;
       const hasPremium = document.getElementById("hasPremium").checked;
       const taxRate = hasPremium ? 0.04 : 0.08;
-      const targetCity = "Caerleon";
 
       const statusEl = document.getElementById("status");
       const resultsPanel = document.getElementById("resultsPanel");
       const tbody = document.getElementById("resultsBody");
-
-      if (isNaN(budget) || budget <= 0) {
-        alert("Digite um valor válido de orçamento.");
-        return;
-      }
 
       const itemIds = buildItemQueries();
 
@@ -435,7 +413,7 @@
         return;
       }
 
-      statusEl.innerText = `Consultando API do Albion Data Project...`;
+      statusEl.innerText = `Buscando todas as oportunidades de flip em ${city}...`;
       tbody.innerHTML = "";
       resultsPanel.classList.add("hidden");
 
@@ -446,85 +424,51 @@
       }
 
       const baseUrl = `https://${server}.albion-online-data.com/api/v2/stats/prices/`;
-      const marketData = {};
 
       try {
         const requests = batches.map(batch => {
           const itemString = batch.join(",");
-          const locationsParam = sourceCity === targetCity ? targetCity : `${sourceCity},${targetCity}`;
-          const requestUrl = `${baseUrl}${itemString}.json?locations=${locationsParam}&qualities=${quality}`;
+          const requestUrl = `${baseUrl}${itemString}.json?locations=${city}&qualities=${quality}`;
           return fetch(requestUrl).then(res => res.ok ? res.json() : []);
         });
 
         const resultsArray = await Promise.all(requests);
-        
-        resultsArray.flat().forEach(entry => {
-          if (!marketData[entry.item_id]) {
-            marketData[entry.item_id] = { 
-              sourceSellMin: 0, 
-              sourceBuyMax: 0,
-              caerleonSellMin: 0,
-              caerleonBuyMax: 0,
-              updatedAt: null 
-            };
-          }
+        const opportunities = [];
 
-          if (entry.city === sourceCity) {
-            marketData[entry.item_id].sourceSellMin = entry.sell_price_min; // Ordem de venda na origem
-            marketData[entry.item_id].sourceBuyMax = entry.buy_price_max;   // Ordem de compra na origem
-          }
-          
-          if (entry.city === targetCity) {
-            marketData[entry.item_id].caerleonSellMin = entry.sell_price_min; // Preço de mercado em Caerleon
-            marketData[entry.item_id].caerleonBuyMax = entry.buy_price_max;   // Venda instantânea em Caerleon
-            marketData[entry.item_id].updatedAt = entry.sell_price_min_date;
+        resultsArray.flat().forEach(entry => {
+          const buyOrderPrice = entry.buy_price_max;
+          const sellOrderPrice = entry.sell_price_min;
+
+          // Aceita qualquer item com ordem de compra maior que 0
+          if (buyOrderPrice > 0 && sellOrderPrice > 0) {
+            // Filtro para evitar distorções irreais de mercado (ex: venda por 999.999.999)
+            if (sellOrderPrice <= buyOrderPrice * 3) {
+              const netSellPrice = sellOrderPrice * (1 - taxRate);
+              const profitPerUnit = netSellPrice - buyOrderPrice;
+
+              if (profitPerUnit > 0) {
+                const marginPercent = (profitPerUnit / buyOrderPrice) * 100;
+
+                opportunities.push({
+                  id: entry.item_id,
+                  buyOrderPrice,
+                  sellOrderPrice,
+                  profitPerUnit,
+                  marginPercent,
+                  updatedAt: entry.sell_price_min_date
+                });
+              }
+            }
           }
         });
 
-        const opportunities = [];
-
-        for (const itemId in marketData) {
-          // Define o preço de compra na origem com base na escolha do usuário
-          const buyPrice = buyType === "instant" 
-            ? marketData[itemId].sourceSellMin 
-            : marketData[itemId].sourceBuyMax;
-
-          const caerleonMarketPrice = marketData[itemId].caerleonSellMin;
-
-          // Validação: Descarta se o preço em Caerleon for mais de 2.5x o preço de origem (Evita anomalias/preços de 2 milhões)
-          let sellPrice = caerleonMarketPrice;
-          if (sellPrice > buyPrice * 2.5) {
-            sellPrice = 0;
-          }
-
-          if (buyPrice > 0 && sellPrice > 0 && buyPrice <= budget) {
-            const netSellPrice = sellPrice * (1 - taxRate);
-            const profitPerUnit = netSellPrice - buyPrice;
-
-            if (profitPerUnit > 0) {
-              const maxUnits = Math.floor(budget / buyPrice);
-              const totalInvestment = maxUnits * buyPrice;
-              const totalProfit = maxUnits * profitPerUnit;
-
-              opportunities.push({
-                id: itemId,
-                buyPrice,
-                sellPrice,
-                maxUnits,
-                totalInvestment,
-                totalProfit,
-                updatedAt: marketData[itemId].updatedAt
-              });
-            }
-          }
-        }
-
-        opportunities.sort((a, b) => b.totalProfit - a.totalProfit);
+        // Ordenar do MAIOR lucro líquido por unidade para o menor
+        opportunities.sort((a, b) => b.profitPerUnit - a.profitPerUnit);
 
         resultsPanel.classList.remove("hidden");
 
         if (opportunities.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Nenhuma oportunidade encontrada. Tente alterar o "Modo de Compra" para "Criar Ordem de Compra" ou selecionar outra cidade de origem.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Nenhuma oportunidade de flip encontrada em ${city} no momento.</td></tr>`;
           statusEl.innerText = "Varredura concluída.";
           return;
         }
@@ -540,21 +484,20 @@
                 <img class="item-icon" src="${imgUrl}" alt="${item.id}" loading="lazy">
               </div>
             </td>
-            <td>${item.buyPrice.toLocaleString()} Silver</td>
-            <td>${item.sellPrice.toLocaleString()} Silver</td>
-            <td><strong>${item.maxUnits.toLocaleString()}x</strong></td>
-            <td>${item.totalInvestment.toLocaleString()} Silver</td>
-            <td class="profit">+${Math.round(item.totalProfit).toLocaleString()} Silver</td>
+            <td>${item.buyOrderPrice.toLocaleString()} Silver</td>
+            <td>${item.sellOrderPrice.toLocaleString()} Silver</td>
+            <td class="profit">+${Math.round(item.profitPerUnit).toLocaleString()} Silver</td>
+            <td style="color: #43b581; font-weight: bold;">${item.marginPercent.toFixed(1)}%</td>
             <td class="time-info">${timeAgo}</td>
           `;
           tbody.appendChild(tr);
         });
 
-        statusEl.innerText = `Varredura concluída! ${opportunities.length} oportunidades encontradas.`;
+        statusEl.innerText = `Varredura concluída! ${opportunities.length} flips disponíveis em ${city}.`;
 
       } catch (error) {
         console.error(error);
-        statusEl.innerText = "Erro na requisição. Tente novamente mais tarde.";
+        statusEl.innerText = "Erro ao buscar os dados da API. Tente novamente em instantes.";
       }
     }
 
