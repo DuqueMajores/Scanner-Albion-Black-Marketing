@@ -186,10 +186,10 @@
 <body>
 
   <div class="container">
-    <h1>Scanner de Transportes para Caerleon</h1>
+    <h1>Scanner de Mercado - Caerleon</h1>
 
     <div class="panel">
-      <div class="panel-title">1. Configurações de Transporte</div>
+      <div class="panel-title">1. Configurações de Compra e Venda</div>
       <div class="form-grid">
         <div class="form-group">
           <label for="server">Servidor</label>
@@ -203,6 +203,7 @@
         <div class="form-group">
           <label for="sourceCity">Cidade de Compra</label>
           <select id="sourceCity">
+            <option value="Caerleon">Caerleon (Mercado Local / Flip)</option>
             <option value="Bridgewatch">Bridgewatch</option>
             <option value="Fort Sterling">Fort Sterling</option>
             <option value="Lymhurst">Lymhurst</option>
@@ -450,7 +451,8 @@
       try {
         const requests = batches.map(batch => {
           const itemString = batch.join(",");
-          const requestUrl = `${baseUrl}${itemString}.json?locations=${sourceCity},${targetCity}&qualities=${quality}`;
+          const locationsParam = sourceCity === targetCity ? targetCity : `${sourceCity},${targetCity}`;
+          const requestUrl = `${baseUrl}${itemString}.json?locations=${locationsParam}&qualities=${quality}`;
           return fetch(requestUrl).then(res => res.ok ? res.json() : []);
         });
 
@@ -468,9 +470,11 @@
 
           if (entry.city === sourceCity) {
             marketData[entry.item_id].sourcePrice = entry.sell_price_min;
-          } else if (entry.city === targetCity) {
-            marketData[entry.item_id].caerleonSellMin = entry.sell_price_min; // Ordem de venda mais barata
-            marketData[entry.item_id].caerleonBuyMax = entry.buy_price_max;   // Maior oferta de compra imediata
+          }
+          
+          if (entry.city === targetCity) {
+            marketData[entry.item_id].caerleonSellMin = entry.sell_price_min;
+            marketData[entry.item_id].caerleonBuyMax = entry.buy_price_max;
             marketData[entry.item_id].updatedAt = entry.sell_price_min_date;
           }
         });
@@ -482,11 +486,9 @@
           
           let sellPrice = 0;
           if (sellStrategy === "buy_order") {
-            sellPrice = marketData[itemId].caerleonBuyMax; // Venda Imediata
+            sellPrice = marketData[itemId].caerleonBuyMax;
           } else {
-            sellPrice = marketData[itemId].caerleonSellMin; // Ordem de Venda
-            
-            // FILTRO ANTI-ANOMALIA: Ignora se o preço em Caerleon for mais de 3x (300%) o valor de origem
+            sellPrice = marketData[itemId].caerleonSellMin;
             if (sellPrice > buyPrice * 3) {
               sellPrice = 0;
             }
@@ -519,7 +521,7 @@
         resultsPanel.classList.remove("hidden");
 
         if (opportunities.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Nenhuma oportunidade real encontrada com os filtros atuais. Recomendamos usar a "Venda Imediata" para lucros garantidos.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Nenhuma oportunidade encontrada para a combinação selecionada.</td></tr>`;
           statusEl.innerText = "Varredura concluída.";
           return;
         }
@@ -567,3 +569,4 @@
   </script>
 </body>
 </html>
+
