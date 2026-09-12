@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Albion Online - Scanner de Flip Completo</title>
+  <title>Albion Online - Scanner Mercado Comum vs Mercado Negro</title>
   <style>
     :root {
       --bg-color: #121418;
@@ -186,7 +186,7 @@
 <body>
 
   <div class="container">
-    <h1>Scanner de Flip Completo (Sem Limite de Silver)</h1>
+    <h1>Scanner: Cidade de Origem ➜ Mercado Negro</h1>
 
     <div class="panel">
       <div class="panel-title">1. Configurações Globais</div>
@@ -208,13 +208,13 @@
     </div>
 
     <div class="panel">
-      <div class="panel-title">2. Filtros do Mercado Local</div>
+      <div class="panel-title">2. Filtros de Pesquisa</div>
       <div class="form-grid">
         
         <div class="form-group">
-          <label for="city">Cidade para Análise</label>
+          <label for="city">Cidade de Origem (Compra)</label>
           <select id="city">
-            <option value="Caerleon">Caerleon</option>
+            <option value="Caerleon">Caerleon (Mercado Comum)</option>
             <option value="Bridgewatch">Bridgewatch</option>
             <option value="Fort Sterling">Fort Sterling</option>
             <option value="Lymhurst">Lymhurst</option>
@@ -230,9 +230,6 @@
             <option value="WEAPON">Armas</option>
             <option value="ARMOR">Armaduras</option>
             <option value="ACCESSORY">Acessórios / Capas / Bolsas</option>
-            <option value="MOUNT">Montarias</option>
-            <option value="CONSUMABLE">Consumíveis</option>
-            <option value="RESOURCE">Recursos Refinados</option>
           </select>
         </div>
 
@@ -277,7 +274,7 @@
 
       </div>
 
-      <button id="scanBtn" onclick="runScanner()">Escanear Todos os Flips</button>
+      <button id="scanBtn" onclick="runScanner()">Escanear Flips para Mercado Negro</button>
     </div>
 
     <div id="status" class="status">Ajuste os filtros e clique em Escanear.</div>
@@ -288,11 +285,11 @@
           <thead>
             <tr>
               <th style="text-align: center;">Item</th>
-              <th>Ordem de Compra (Custo)</th>
-              <th>Ordem de Venda (Preço)</th>
+              <th>Compra na Cidade</th>
+              <th>Venda no Mercado Negro</th>
               <th>Lucro Líquido / Unid.</th>
               <th>Margem (%)</th>
-              <th>Atualização</th>
+              <th>Atualização BM</th>
             </tr>
           </thead>
           <tbody id="resultsBody">
@@ -339,23 +336,7 @@
       { baseId: "CAPEITEM_FW_CAERLEON", name: "Capa de Caerleon", category: "ACCESSORY" },
       { baseId: "CAPEITEM_FW_BRIDGEWATCH", name: "Capa de Bridgewatch", category: "ACCESSORY" },
       { baseId: "CAPEITEM_FW_FORTSTERLING", name: "Capa de Fort Sterling", category: "ACCESSORY" },
-      { baseId: "CAPEITEM_FW_LYMHURST", name: "Capa de Lymhurst", category: "ACCESSORY" },
-
-      // MONTARIAS
-      { baseId: "MOUNT_HORSE", name: "Cavalo de Montaria", category: "MOUNT", noEnchant: true },
-      { baseId: "MOUNT_COW", name: "Boi de Carga", category: "MOUNT", noEnchant: true },
-      { baseId: "MOUNT_SWIFTCLAW", name: "Garra-rápida", category: "MOUNT", fixedTier: "T5", noEnchant: true },
-
-      // CONSUMÍVEIS
-      { baseId: "POTION_HEAL", name: "Poção de Cura", category: "CONSUMABLE", noEnchant: true },
-      { baseId: "POTION_POISON", name: "Poção de Veneno", category: "CONSUMABLE", noEnchant: true },
-      { baseId: "MEATPIE", name: "Torta de Carne", category: "CONSUMABLE", fixedTier: "T6", noEnchant: true },
-
-      // RECURSOS REFINADOS
-      { baseId: "PLANKS", name: "Tábuas de Madeira", category: "RESOURCE" },
-      { baseId: "METALBAR", name: "Barras de Metal", category: "RESOURCE" },
-      { baseId: "LEATHER", name: "Couro Trabalhado", category: "RESOURCE" },
-      { baseId: "CLOTH", name: "Tecido", category: "RESOURCE" }
+      { baseId: "CAPEITEM_FW_LYMHURST", name: "Capa de Lymhurst", category: "ACCESSORY" }
     ];
 
     function buildItemQueries() {
@@ -413,7 +394,7 @@
         return;
       }
 
-      statusEl.innerText = `Buscando todas as oportunidades de flip em ${city}...`;
+      statusEl.innerText = `Buscando preços em ${city} e no Mercado Negro...`;
       tbody.innerHTML = "";
       resultsPanel.classList.add("hidden");
 
@@ -428,36 +409,55 @@
       try {
         const requests = batches.map(batch => {
           const itemString = batch.join(",");
-          const requestUrl = `${baseUrl}${itemString}.json?locations=${city}&qualities=${quality}`;
+          // Busca preços na Cidade de Origem E no Mercado Negro simultaneamente
+          const requestUrl = `${baseUrl}${itemString}.json?locations=${city},Black Market&qualities=${quality}`;
           return fetch(requestUrl).then(res => res.ok ? res.json() : []);
         });
 
         const resultsArray = await Promise.all(requests);
+        const allEntries = resultsArray.flat();
+
+        // Mapear entradas agrupando por ID do item
+        const itemDataMap = {};
+
+        allEntries.forEach(entry => {
+          if (!itemDataMap[entry.item_id]) {
+            itemDataMap[entry.item_id] = {};
+          }
+          if (entry.city === city) {
+            // Menor Preço de Venda do Mercado Comum (Custo para comprar o item agora)
+            itemDataMap[entry.item_id].cityBuyPrice = entry.sell_price_min;
+          } else if (entry.city === "Black Market") {
+            // Maior Ordem de Compra do Mercado Negro (Valor pago imediatamente pelo BM)
+            itemDataMap[entry.item_id].bmSellPrice = entry.buy_price_max;
+            itemDataMap[entry.item_id].bmDate = entry.buy_price_max_date;
+          }
+        });
+
         const opportunities = [];
 
-        resultsArray.flat().forEach(entry => {
-          const buyOrderPrice = entry.buy_price_max;
-          const sellOrderPrice = entry.sell_price_min;
+        Object.keys(itemDataMap).forEach(itemId => {
+          const data = itemDataMap[itemId];
+          const buyPrice = data.cityBuyPrice;
+          const sellPrice = data.bmSellPrice;
 
-          // Aceita qualquer item com ordem de compra maior que 0
-          if (buyOrderPrice > 0 && sellOrderPrice > 0) {
-            // Filtro para evitar distorções irreais de mercado (ex: venda por 999.999.999)
-            if (sellOrderPrice <= buyOrderPrice * 3) {
-              const netSellPrice = sellOrderPrice * (1 - taxRate);
-              const profitPerUnit = netSellPrice - buyOrderPrice;
+          // Valida se há oferta de venda na cidade e ordem de compra no BM
+          if (buyPrice > 0 && sellPrice > 0) {
+            const netSellPrice = sellPrice * (1 - taxRate);
+            const profitPerUnit = netSellPrice - buyPrice;
 
-              if (profitPerUnit > 0) {
-                const marginPercent = (profitPerUnit / buyOrderPrice) * 100;
+            // Filtra somente o que gera lucro real
+            if (profitPerUnit > 0) {
+              const marginPercent = (profitPerUnit / buyPrice) * 100;
 
-                opportunities.push({
-                  id: entry.item_id,
-                  buyOrderPrice,
-                  sellOrderPrice,
-                  profitPerUnit,
-                  marginPercent,
-                  updatedAt: entry.sell_price_min_date
-                });
-              }
+              opportunities.push({
+                id: itemId,
+                buyPrice,
+                sellPrice,
+                profitPerUnit,
+                marginPercent,
+                updatedAt: data.bmDate
+              });
             }
           }
         });
@@ -468,7 +468,7 @@
         resultsPanel.classList.remove("hidden");
 
         if (opportunities.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Nenhuma oportunidade de flip encontrada em ${city} no momento.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Nenhum flip lucrativo de ${city} para o Mercado Negro no momento.</td></tr>`;
           statusEl.innerText = "Varredura concluída.";
           return;
         }
@@ -484,8 +484,8 @@
                 <img class="item-icon" src="${imgUrl}" alt="${item.id}" loading="lazy">
               </div>
             </td>
-            <td>${item.buyOrderPrice.toLocaleString()} Silver</td>
-            <td>${item.sellOrderPrice.toLocaleString()} Silver</td>
+            <td>${item.buyPrice.toLocaleString()} Silver</td>
+            <td>${item.sellPrice.toLocaleString()} Silver</td>
             <td class="profit">+${Math.round(item.profitPerUnit).toLocaleString()} Silver</td>
             <td style="color: #43b581; font-weight: bold;">${item.marginPercent.toFixed(1)}%</td>
             <td class="time-info">${timeAgo}</td>
@@ -493,7 +493,7 @@
           tbody.appendChild(tr);
         });
 
-        statusEl.innerText = `Varredura concluída! ${opportunities.length} flips disponíveis em ${city}.`;
+        statusEl.innerText = `Varredura concluída! ${opportunities.length} flips lucrativos encontrados para o Mercado Negro.`;
 
       } catch (error) {
         console.error(error);
