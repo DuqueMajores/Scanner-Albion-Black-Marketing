@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Albion Online - Scanner Completo Caerleon</title>
+  <title>Albion Online - Scanner Real-Time Caerleon</title>
   <style>
     :root {
       --bg-color: #121418;
@@ -212,6 +212,14 @@
         </div>
 
         <div class="form-group">
+          <label for="sellStrategy">Estratégia de Venda em Caerleon</label>
+          <select id="sellStrategy">
+            <option value="buy_order">Venda Imediata (Ordem de Compra em Caerleon)</option>
+            <option value="sell_order">Criar Ordem de Venda (Preço Realista)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
           <label for="budget">Orçamento (Silver)</label>
           <input type="number" id="budget" value="1000000" min="1000" step="50000">
         </div>
@@ -229,7 +237,7 @@
         
         <div class="form-group full-width">
           <label for="searchName">Pesquisa por Nome ou ID Interno</label>
-          <input type="text" id="searchName" placeholder="Ex: Espada, Capa, Garra, Poção, Sapatos, Leather, Wood, Potion...">
+          <input type="text" id="searchName" placeholder="Ex: Espada, Capa, Garra, Poção, Sapatos, Leather, Wood...">
         </div>
 
         <div class="form-group">
@@ -308,104 +316,59 @@
   </div>
 
   <script>
-    // Banco de Dados Expandido cobrindo grande parte do mercado
     const ITEM_DATABASE = [
-      // ARMAS - ESPADAS
+      // ARMAS
       { baseId: "MAIN_SWORD", name: "Espada Larga", category: "WEAPON" },
       { baseId: "2H_CLAYMORE", name: "Claymore", category: "WEAPON" },
       { baseId: "2H_DUALSWORDS", name: "Espadas Duplas", category: "WEAPON" },
-      { baseId: "2H_CLEAVER_HELL", name: "Lâminas Escaldantes", category: "WEAPON" },
-      // ARMAS - CAJADOS
       { baseId: "MAIN_DOUBLEBLADEDSTAFF", name: "Cajado de Garrote", category: "WEAPON" },
-      { baseId: "2H_COMBATSTAFF", name: "Cajado de Monge", category: "WEAPON" },
       { baseId: "MAIN_CURSEDSTAFF", name: "Cajado Amaldiçoado", category: "WEAPON" },
-      { baseId: "2H_CURSEDSTAFF", name: "Cajado Amaldiçoado Grande", category: "WEAPON" },
       { baseId: "MAIN_FIRESTAFF", name: "Cajado de Fogo", category: "WEAPON" },
-      { baseId: "2H_INFERNOSTAFF", name: "Cajado Infernal", category: "WEAPON" },
       { baseId: "MAIN_FROSTSTAFF", name: "Cajado de Gelo", category: "WEAPON" },
-      { baseId: "MAIN_ARCANESTAFF", name: "Cajado Arcano", category: "WEAPON" },
       { baseId: "MAIN_HOLYSTAFF", name: "Cajado Sagrado", category: "WEAPON" },
       { baseId: "MAIN_NATURESTAFF", name: "Cajado da Natureza", category: "WEAPON" },
-      // ARMAS - ARCOS & ADAGAS
       { baseId: "2H_BOW", name: "Arco", category: "WEAPON" },
-      { baseId: "2H_WARBOW", name: "Arco de Guerra", category: "WEAPON" },
-      { baseId: "2H_LONGBOW", name: "Arco Longo", category: "WEAPON" },
       { baseId: "2H_CROSSBOW", name: "Besta", category: "WEAPON" },
-      { baseId: "2H_CROSSBOWLARGE", name: "Besta Leve", category: "WEAPON" },
       { baseId: "2H_CLAWPAIR", name: "Garras", category: "WEAPON" },
       { baseId: "MAIN_DAGGER", name: "Adaga", category: "WEAPON" },
-      { baseId: "2H_DAGGERPAIR", name: "Par de Adagas", category: "WEAPON" },
-      { baseId: "2H_DUALSPEAR", name: "Lança Dupla", category: "WEAPON" },
       { baseId: "MAIN_SPEAR", name: "Lança", category: "WEAPON" },
       { baseId: "2H_AXE", name: "Machado Grande", category: "WEAPON" },
-      { baseId: "2H_HALBERD", name: "Alabarda", category: "WEAPON" },
-      { baseId: "2H_MACE", name: "Maça Grande", category: "WEAPON" },
-      { baseId: "2H_HAMMER", name: "Martelo Grande", category: "WEAPON" },
 
-      // ARMADURAS - COURO
+      // ARMADURAS
       { baseId: "HEAD_LEATHER_SET1", name: "Capote de Caçador", category: "ARMOR" },
       { baseId: "ARMOR_LEATHER_SET1", name: "Chaqueta de Caçador", category: "ARMOR" },
       { baseId: "SHOES_LEATHER_SET1", name: "Botas de Caçador", category: "ARMOR" },
       { baseId: "HEAD_LEATHER_SET2", name: "Capote de Assassino", category: "ARMOR" },
       { baseId: "ARMOR_LEATHER_SET2", name: "Chaqueta de Assassino", category: "ARMOR" },
-      { baseId: "SHOES_LEATHER_SET2", name: "Botas de Assassino", category: "ARMOR" },
-      { baseId: "HEAD_LEATHER_SET3", name: "Capote de Mercenário", category: "ARMOR" },
-      { baseId: "ARMOR_LEATHER_SET3", name: "Chaqueta de Mercenário", category: "ARMOR" },
-      { baseId: "SHOES_LEATHER_SET3", name: "Botas de Mercenário", category: "ARMOR" },
-
-      // ARMADURAS - PANO
       { baseId: "HEAD_CLOTH_SET1", name: "Capuz de Mago", category: "ARMOR" },
       { baseId: "ARMOR_CLOTH_SET1", name: "Robe de Mago", category: "ARMOR" },
-      { baseId: "SHOES_CLOTH_SET1", name: "Sandálias de Mago", category: "ARMOR" },
       { baseId: "HEAD_CLOTH_SET2", name: "Capuz de Clérigo", category: "ARMOR" },
       { baseId: "ARMOR_CLOTH_SET2", name: "Robe de Clérigo", category: "ARMOR" },
-      { baseId: "SHOES_CLOTH_SET2", name: "Sandálias de Clérigo", category: "ARMOR" },
-      { baseId: "HEAD_CLOTH_SET3", name: "Capuz de Erudito", category: "ARMOR" },
-      { baseId: "ARMOR_CLOTH_SET3", name: "Robe de Erudito", category: "ARMOR" },
-      { baseId: "SHOES_CLOTH_SET3", name: "Sandálias de Erudito", category: "ARMOR" },
-
-      // ARMADURAS - PLACA
       { baseId: "HEAD_PLATE_SET1", name: "Yelmo de Soldado", category: "ARMOR" },
       { baseId: "ARMOR_PLATE_SET1", name: "Peitoral de Soldado", category: "ARMOR" },
-      { baseId: "SHOES_PLATE_SET1", name: "Botas de Soldado", category: "ARMOR" },
-      { baseId: "HEAD_PLATE_SET2", name: "Yelmo de Cavaleiro", category: "ARMOR" },
-      { baseId: "ARMOR_PLATE_SET2", name: "Peitoral de Cavaleiro", category: "ARMOR" },
-      { baseId: "SHOES_PLATE_SET2", name: "Botas de Cavaleiro", category: "ARMOR" },
-      { baseId: "HEAD_PLATE_SET3", name: "Yelmo de Guardião", category: "ARMOR" },
-      { baseId: "ARMOR_PLATE_SET3", name: "Peitoral de Guardião", category: "ARMOR" },
-      { baseId: "SHOES_PLATE_SET3", name: "Botas de Guardião", category: "ARMOR" },
 
       // ACESSÓRIOS & CAPAS
       { baseId: "BAG", name: "Mochila", category: "ACCESSORY", noEnchant: true },
-      { baseId: "CAPE", name: "Capa Comum", category: "ACCESSORY", noEnchant: true },
       { baseId: "CAPEITEM_FW_CAERLEON", name: "Capa de Caerleon", category: "ACCESSORY" },
       { baseId: "CAPEITEM_FW_BRIDGEWATCH", name: "Capa de Bridgewatch", category: "ACCESSORY" },
       { baseId: "CAPEITEM_FW_FORTSTERLING", name: "Capa de Fort Sterling", category: "ACCESSORY" },
       { baseId: "CAPEITEM_FW_LYMHURST", name: "Capa de Lymhurst", category: "ACCESSORY" },
-      { baseId: "CAPEITEM_FW_MARTLOCK", name: "Capa de Martlock", category: "ACCESSORY" },
-      { baseId: "CAPEITEM_FW_THETFORD", name: "Capa de Thetford", category: "ACCESSORY" },
 
       // MONTARIAS
       { baseId: "MOUNT_HORSE", name: "Cavalo de Montaria", category: "MOUNT", noEnchant: true },
       { baseId: "MOUNT_COW", name: "Boi de Carga", category: "MOUNT", noEnchant: true },
       { baseId: "MOUNT_SWIFTCLAW", name: "Garra-rápida", category: "MOUNT", fixedTier: "T5", noEnchant: true },
-      { baseId: "MOUNT_DIREWOLF", name: "Lobo do Terror", category: "MOUNT", fixedTier: "T8", noEnchant: true },
-      { baseId: "MOUNT_ARMORED_HORSE", name: "Cavalo Blindado", category: "MOUNT", noEnchant: true },
 
       // CONSUMÍVEIS
       { baseId: "POTION_HEAL", name: "Poção de Cura", category: "CONSUMABLE", noEnchant: true },
-      { baseId: "POTION_ENERGY", name: "Poção de Energia", category: "CONSUMABLE", noEnchant: true },
       { baseId: "POTION_POISON", name: "Poção de Veneno", category: "CONSUMABLE", noEnchant: true },
       { baseId: "MEATPIE", name: "Torta de Carne", category: "CONSUMABLE", fixedTier: "T6", noEnchant: true },
-      { baseId: "STEW", name: "Ensopado de Carne", category: "CONSUMABLE", fixedTier: "T7", noEnchant: true },
-      { baseId: "SANDWICH", name: "Sanduíche de Carne", category: "CONSUMABLE", fixedTier: "T6", noEnchant: true },
 
       // RECURSOS REFINADOS
       { baseId: "PLANKS", name: "Tábuas de Madeira", category: "RESOURCE" },
       { baseId: "METALBAR", name: "Barras de Metal", category: "RESOURCE" },
       { baseId: "LEATHER", name: "Couro Trabalhado", category: "RESOURCE" },
-      { baseId: "CLOTH", name: "Tecido", category: "RESOURCE" },
-      { baseId: "STONEBLOCK", name: "Bloco de Pedra", category: "RESOURCE", noEnchant: true }
+      { baseId: "CLOTH", name: "Tecido", category: "RESOURCE" }
     ];
 
     function buildItemQueries() {
@@ -420,7 +383,6 @@
       const itemIds = [];
 
       ITEM_DATABASE.forEach(item => {
-        // Filtra por nome em Português ou código do ID
         const matchName = item.name.toLowerCase().includes(nameQuery);
         const matchId = item.baseId.toLowerCase().includes(nameQuery);
         if (nameQuery && !matchName && !matchId) return;
@@ -449,6 +411,7 @@
     async function runScanner() {
       const server = document.getElementById("server").value;
       const sourceCity = document.getElementById("sourceCity").value;
+      const sellStrategy = document.getElementById("sellStrategy").value;
       const budget = parseFloat(document.getElementById("budget").value);
       const quality = document.getElementById("quality").value;
       const hasPremium = document.getElementById("hasPremium").checked;
@@ -471,11 +434,10 @@
         return;
       }
 
-      statusEl.innerText = `Buscando cotações de ${itemIds.length} variações no Albion Data Project...`;
+      statusEl.innerText = `Consultando API do Albion Data Project...`;
       tbody.innerHTML = "";
       resultsPanel.classList.add("hidden");
 
-      // Divide a lista em pacotes de no máximo 80 itens por chamada à API
       const BATCH_SIZE = 80;
       const batches = [];
       for (let i = 0; i < itemIds.length; i += BATCH_SIZE) {
@@ -486,7 +448,6 @@
       const marketData = {};
 
       try {
-        // Dispara requisições paralelas para buscar todos os pacotes
         const requests = batches.map(batch => {
           const itemString = batch.join(",");
           const requestUrl = `${baseUrl}${itemString}.json?locations=${sourceCity},${targetCity}&qualities=${quality}`;
@@ -495,12 +456,12 @@
 
         const resultsArray = await Promise.all(requests);
         
-        // Consolida o retorno de todos os pacotes
         resultsArray.flat().forEach(entry => {
           if (!marketData[entry.item_id]) {
             marketData[entry.item_id] = { 
               sourcePrice: 0, 
-              caerleonSellPrice: 0,
+              caerleonSellMin: 0,
+              caerleonBuyMax: 0,
               updatedAt: null 
             };
           }
@@ -508,7 +469,8 @@
           if (entry.city === sourceCity) {
             marketData[entry.item_id].sourcePrice = entry.sell_price_min;
           } else if (entry.city === targetCity) {
-            marketData[entry.item_id].caerleonSellPrice = entry.sell_price_min;
+            marketData[entry.item_id].caerleonSellMin = entry.sell_price_min; // Ordem de venda mais barata
+            marketData[entry.item_id].caerleonBuyMax = entry.buy_price_max;   // Maior oferta de compra imediata
             marketData[entry.item_id].updatedAt = entry.sell_price_min_date;
           }
         });
@@ -517,7 +479,18 @@
 
         for (const itemId in marketData) {
           const buyPrice = marketData[itemId].sourcePrice;
-          const sellPrice = marketData[itemId].caerleonSellPrice;
+          
+          let sellPrice = 0;
+          if (sellStrategy === "buy_order") {
+            sellPrice = marketData[itemId].caerleonBuyMax; // Venda Imediata
+          } else {
+            sellPrice = marketData[itemId].caerleonSellMin; // Ordem de Venda
+            
+            // FILTRO ANTI-ANOMALIA: Ignora se o preço em Caerleon for mais de 3x (300%) o valor de origem
+            if (sellPrice > buyPrice * 3) {
+              sellPrice = 0;
+            }
+          }
 
           if (buyPrice > 0 && sellPrice > 0 && buyPrice <= budget) {
             const netSellPrice = sellPrice * (1 - taxRate);
@@ -546,7 +519,7 @@
         resultsPanel.classList.remove("hidden");
 
         if (opportunities.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Nenhuma oportunidade lucrativa encontrada no momento para os filtros e orçamento configurados.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Nenhuma oportunidade real encontrada com os filtros atuais. Recomendamos usar a "Venda Imediata" para lucros garantidos.</td></tr>`;
           statusEl.innerText = "Varredura concluída.";
           return;
         }
@@ -572,11 +545,11 @@
           tbody.appendChild(tr);
         });
 
-        statusEl.innerText = `Varredura concluída! ${opportunities.length} oportunidades encontradas.`;
+        statusEl.innerText = `Varredura concluída! ${opportunities.length} oportunidades verificadas.`;
 
       } catch (error) {
         console.error(error);
-        statusEl.innerText = "Erro ao conectar com a API do Albion Data. Tente novamente mais tarde.";
+        statusEl.innerText = "Erro na requisição. Tente novamente mais tarde.";
       }
     }
 
@@ -594,7 +567,3 @@
   </script>
 </body>
 </html>
-
-
-
-
