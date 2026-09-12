@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Albion Online - Scanner Mercado Comum vs Mercado Negro</title>
+  <title>Albion Online - Scanner BM Tempo Real (Máx 2 Min)</title>
   <style>
     :root {
       --bg-color: #121418;
@@ -12,6 +12,8 @@
       --text-color: #e0e0e0;
       --border-color: #2e3440;
       --green: #43b581;
+      --warning: #faa61a;
+      --danger: #f04747;
     }
 
     * { box-sizing: border-box; }
@@ -169,11 +171,7 @@
       font-weight: bold;
     }
 
-    .time-info {
-      font-size: 0.8rem;
-      color: #888;
-      white-space: nowrap;
-    }
+    .time-fresh { color: var(--green); font-weight: bold; }
 
     @media (max-width: 600px) {
       body { padding: 10px; }
@@ -186,7 +184,7 @@
 <body>
 
   <div class="container">
-    <h1>Scanner: Cidade de Origem ➜ Mercado Negro</h1>
+    <h1>Scanner: Mercado Comum ➜ Mercado Negro</h1>
 
     <div class="panel">
       <div class="panel-title">1. Configurações Globais</div>
@@ -208,7 +206,7 @@
     </div>
 
     <div class="panel">
-      <div class="panel-title">2. Filtros de Pesquisa</div>
+      <div class="panel-title">2. Filtros de Pesquisa & Recência</div>
       <div class="form-grid">
         
         <div class="form-group">
@@ -220,6 +218,16 @@
             <option value="Lymhurst">Lymhurst</option>
             <option value="Martlock">Martlock</option>
             <option value="Thetford">Thetford</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="maxMinutes">Idade Máxima dos Dados</label>
+          <select id="maxMinutes">
+            <option value="1">Até 1 Minuto</option>
+            <option value="2" selected>Até 2 Minutos (Padrão)</option>
+            <option value="3">Até 3 Minutos</option>
+            <option value="5">Até 5 Minutos</option>
           </select>
         </div>
 
@@ -274,7 +282,7 @@
 
       </div>
 
-      <button id="scanBtn" onclick="runScanner()">Escanear Flips para Mercado Negro</button>
+      <button id="scanBtn" onclick="runScanner()">Escanear Flips em Tempo Real</button>
     </div>
 
     <div id="status" class="status">Ajuste os filtros e clique em Escanear.</div>
@@ -301,7 +309,6 @@
 
   <script>
     const ITEM_DATABASE = [
-      // ARMAS
       { baseId: "MAIN_SWORD", name: "Espada Larga", category: "WEAPON" },
       { baseId: "2H_CLAYMORE", name: "Claymore", category: "WEAPON" },
       { baseId: "2H_DUALSWORDS", name: "Espadas Duplas", category: "WEAPON" },
@@ -317,8 +324,6 @@
       { baseId: "MAIN_DAGGER", name: "Adaga", category: "WEAPON" },
       { baseId: "MAIN_SPEAR", name: "Lança", category: "WEAPON" },
       { baseId: "2H_AXE", name: "Machado Grande", category: "WEAPON" },
-
-      // ARMADURAS
       { baseId: "HEAD_LEATHER_SET1", name: "Capote de Caçador", category: "ARMOR" },
       { baseId: "ARMOR_LEATHER_SET1", name: "Chaqueta de Caçador", category: "ARMOR" },
       { baseId: "SHOES_LEATHER_SET1", name: "Botas de Caçador", category: "ARMOR" },
@@ -330,8 +335,6 @@
       { baseId: "ARMOR_CLOTH_SET2", name: "Robe de Clérigo", category: "ARMOR" },
       { baseId: "HEAD_PLATE_SET1", name: "Yelmo de Soldado", category: "ARMOR" },
       { baseId: "ARMOR_PLATE_SET1", name: "Peitoral de Soldado", category: "ARMOR" },
-
-      // ACESSÓRIOS & CAPAS
       { baseId: "BAG", name: "Mochila", category: "ACCESSORY", noEnchant: true },
       { baseId: "CAPEITEM_FW_CAERLEON", name: "Capa de Caerleon", category: "ACCESSORY" },
       { baseId: "CAPEITEM_FW_BRIDGEWATCH", name: "Capa de Bridgewatch", category: "ACCESSORY" },
@@ -380,6 +383,7 @@
       const server = document.getElementById("server").value;
       const city = document.getElementById("city").value;
       const quality = document.getElementById("quality").value;
+      const maxMinutesAllowed = parseFloat(document.getElementById("maxMinutes").value);
       const hasPremium = document.getElementById("hasPremium").checked;
       const taxRate = hasPremium ? 0.04 : 0.08;
 
@@ -394,7 +398,7 @@
         return;
       }
 
-      statusEl.innerText = `Buscando preços em ${city} e no Mercado Negro...`;
+      statusEl.innerText = `Buscando atualizações de mercado em tempo real (${city} ➔ Mercado Negro)...`;
       tbody.innerHTML = "";
       resultsPanel.classList.add("hidden");
 
@@ -409,7 +413,6 @@
       try {
         const requests = batches.map(batch => {
           const itemString = batch.join(",");
-          // Busca preços na Cidade de Origem E no Mercado Negro simultaneamente
           const requestUrl = `${baseUrl}${itemString}.json?locations=${city},Black Market&qualities=${quality}`;
           return fetch(requestUrl).then(res => res.ok ? res.json() : []);
         });
@@ -417,7 +420,6 @@
         const resultsArray = await Promise.all(requests);
         const allEntries = resultsArray.flat();
 
-        // Mapear entradas agrupando por ID do item
         const itemDataMap = {};
 
         allEntries.forEach(entry => {
@@ -425,28 +427,35 @@
             itemDataMap[entry.item_id] = {};
           }
           if (entry.city === city) {
-            // Menor Preço de Venda do Mercado Comum (Custo para comprar o item agora)
             itemDataMap[entry.item_id].cityBuyPrice = entry.sell_price_min;
           } else if (entry.city === "Black Market") {
-            // Maior Ordem de Compra do Mercado Negro (Valor pago imediatamente pelo BM)
             itemDataMap[entry.item_id].bmSellPrice = entry.buy_price_max;
             itemDataMap[entry.item_id].bmDate = entry.buy_price_max_date;
           }
         });
 
         const opportunities = [];
+        const now = new Date();
 
         Object.keys(itemDataMap).forEach(itemId => {
           const data = itemDataMap[itemId];
           const buyPrice = data.cityBuyPrice;
           const sellPrice = data.bmSellPrice;
 
-          // Valida se há oferta de venda na cidade e ordem de compra no BM
           if (buyPrice > 0 && sellPrice > 0) {
+            // Filtro rígido de minutos de atualização
+            if (data.bmDate) {
+              const dateBm = new Date(data.bmDate);
+              const ageInMinutes = (now - dateBm) / (1000 * 60);
+
+              if (ageInMinutes > maxMinutesAllowed) return;
+            } else {
+              return;
+            }
+
             const netSellPrice = sellPrice * (1 - taxRate);
             const profitPerUnit = netSellPrice - buyPrice;
 
-            // Filtra somente o que gera lucro real
             if (profitPerUnit > 0) {
               const marginPercent = (profitPerUnit / buyPrice) * 100;
 
@@ -462,13 +471,12 @@
           }
         });
 
-        // Ordenar do MAIOR lucro líquido por unidade para o menor
         opportunities.sort((a, b) => b.profitPerUnit - a.profitPerUnit);
 
         resultsPanel.classList.remove("hidden");
 
         if (opportunities.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Nenhum flip lucrativo de ${city} para o Mercado Negro no momento.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">Nenhuma ordem no Mercado Negro atualizada nos últimos ${maxMinutesAllowed} min. Mantenha seu <i>Albion Data Client</i> aberto ao inspecionar o mercado.</td></tr>`;
           statusEl.innerText = "Varredura concluída.";
           return;
         }
@@ -476,7 +484,7 @@
         opportunities.forEach(item => {
           const tr = document.createElement("tr");
           const imgUrl = `https://render.albiononline.com/v1/item/${item.id}.png?quality=${quality}`;
-          const timeAgo = formatTimeAgo(item.updatedAt);
+          const timeText = formatMinutesAgo(item.updatedAt);
 
           tr.innerHTML = `
             <td style="text-align: center;">
@@ -488,12 +496,12 @@
             <td>${item.sellPrice.toLocaleString()} Silver</td>
             <td class="profit">+${Math.round(item.profitPerUnit).toLocaleString()} Silver</td>
             <td style="color: #43b581; font-weight: bold;">${item.marginPercent.toFixed(1)}%</td>
-            <td class="time-info">${timeAgo}</td>
+            <td class="time-fresh">${timeText}</td>
           `;
           tbody.appendChild(tr);
         });
 
-        statusEl.innerText = `Varredura concluída! ${opportunities.length} flips lucrativos encontrados para o Mercado Negro.`;
+        statusEl.innerText = `Varredura concluída! ${opportunities.length} flips encontrados (atualizados nos últimos ${maxMinutesAllowed} min).`;
 
       } catch (error) {
         console.error(error);
@@ -501,16 +509,14 @@
       }
     }
 
-    function formatTimeAgo(dateString) {
+    function formatMinutesAgo(dateString) {
       if (!dateString || dateString.startsWith("0001")) return "Sem registro";
       const date = new Date(dateString);
-      const diffMinutes = Math.floor((new Date() - date) / 60000);
+      const diffSeconds = Math.floor((new Date() - date) / 1000);
 
-      if (diffMinutes < 1) return "Agora";
-      if (diffMinutes < 60) return `Há ${diffMinutes} min`;
-      const diffHours = Math.floor(diffMinutes / 60);
-      if (diffHours < 24) return `Há ${diffHours} h`;
-      return `Há ${Math.floor(diffHours / 24)} d`;
+      if (diffSeconds < 60) return `${diffSeconds} seg atrás`;
+      const diffMinutes = Math.floor(diffSeconds / 60);
+      return `Há ${diffMinutes} min`;
     }
   </script>
 </body>
