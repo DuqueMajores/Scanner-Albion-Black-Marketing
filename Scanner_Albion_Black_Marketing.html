@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Albion Online - Scanner Completo Caerleon</title>
+  <style>
+    :root {
+      --bg-color: #121418;
+      --card-bg: #1c2027;
+      --accent-color: #e5a93b;
+      --text-color: #e0e0e0;
+      --border-color: #2e3440;
+      --green: #43b581;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 15px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--accent-color);
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 1.5rem;
+    }
+
+    .panel {
+      background-color: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      margin-bottom: 20px;
+    }
+
+    .panel-title {
+      color: var(--accent-color);
+      font-size: 1.1rem;
+      margin-bottom: 15px;
+      font-weight: bold;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    .hidden { display: none; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+    }
+
+    .full-width { grid-column: 1 / -1; }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      margin-bottom: 5px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+
+    input, select, button {
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      background-color: #0f1115;
+      color: #fff;
+      font-size: 0.95rem;
+      width: 100%;
+    }
+
+    button {
+      background-color: var(--accent-color);
+      color: #121418;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+      border: none;
+      margin-top: 15px;
+    }
+
+    button:hover { background-color: #d4972b; }
+
+    .checkbox-group {
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      margin-top: 25px;
+    }
+
+    .checkbox-group input {
+      width: 18px;
+      height: 18px;
+    }
+
+    .status {
+      text-align: center;
+      font-style: italic;
+      color: #aaa;
+      margin: 15px 0;
+      font-size: 0.9rem;
+    }
+
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      min-width: 650px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background-color: #16191f;
+      color: var(--accent-color);
+      white-space: nowrap;
+    }
+
+    tr:hover { background-color: #232832; }
+
+    .item-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .item-icon {
+      width: 52px;
+      height: 52px;
+      object-fit: contain;
+      background-color: #0d0e12;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+    }
+
+    .profit {
+      color: var(--green);
+      font-weight: bold;
+    }
+
+    .time-info {
+      font-size: 0.8rem;
+      color: #888;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 10px; }
+      .panel { padding: 15px; }
+      h1 { font-size: 1.2rem; }
+      .item-icon { width: 40px; height: 40px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Scanner de Transportes para Caerleon</h1>
+
+    <div class="panel">
+      <div class="panel-title">1. Configurações de Transporte</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="server">Servidor</label>
+          <select id="server">
+            <option value="west">Américas (West)</option>
+            <option value="europe">Europa (Europe)</option>
+            <option value="east">Ásia (East)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="sourceCity">Cidade de Compra</label>
+          <select id="sourceCity">
+            <option value="Bridgewatch">Bridgewatch</option>
+            <option value="Fort Sterling">Fort Sterling</option>
+            <option value="Lymhurst">Lymhurst</option>
+            <option value="Martlock">Martlock</option>
+            <option value="Thetford">Thetford</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="budget">Orçamento (Silver)</label>
+          <input type="number" id="budget" value="1000000" min="1000" step="50000">
+        </div>
+
+        <div class="form-group checkbox-group">
+          <input type="checkbox" id="hasPremium" checked>
+          <label for="hasPremium">Possui Premium? (4% taxa)</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">2. Filtro de Itens (Mercado)</div>
+      <div class="form-grid">
+        
+        <div class="form-group full-width">
+          <label for="searchName">Pesquisa por Nome ou ID Interno</label>
+          <input type="text" id="searchName" placeholder="Ex: Espada, Capa, Garra, Poção, Sapatos, Leather, Wood, Potion...">
+        </div>
+
+        <div class="form-group">
+          <label for="category">Categoria</label>
+          <select id="category">
+            <option value="ALL">Todas as Categorias</option>
+            <option value="WEAPON">Armas</option>
+            <option value="ARMOR">Armaduras</option>
+            <option value="ACCESSORY">Acessórios / Capas / Bolsas</option>
+            <option value="MOUNT">Montarias</option>
+            <option value="CONSUMABLE">Consumíveis</option>
+            <option value="RESOURCE">Recursos Refinados</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="tier">Grau (Tier)</label>
+          <select id="tier">
+            <option value="ALL">Todos os Graus (T4 a T8)</option>
+            <option value="T4">Grau 4 (T4)</option>
+            <option value="T5">Grau 5 (T5)</option>
+            <option value="T6">Grau 6 (T6)</option>
+            <option value="T7">Grau 7 (T7)</option>
+            <option value="T8">Grau 8 (T8)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="enchantment">Encantamento</label>
+          <select id="enchantment">
+            <option value="ALL">Todos (.0 a .3)</option>
+            <option value="0">.0 (Sem Encantamento)</option>
+            <option value="1">.1</option>
+            <option value="2">.2</option>
+            <option value="3">.3</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="quality">Qualidade</label>
+          <select id="quality">
+            <option value="1">Normal / Qualquer</option>
+            <option value="2">Boa</option>
+            <option value="3">Excepcional</option>
+            <option value="4">Excelente</option>
+            <option value="5">Obra-prima</option>
+          </select>
+        </div>
+
+      </div>
+
+      <button id="scanBtn" onclick="runScanner()">Escanear Oportunidades</button>
+    </div>
+
+    <div id="status" class="status">Ajuste os filtros e clique em Escanear.</div>
+
+    <div id="resultsPanel" class="panel hidden">
+      <div class="table-container">
+        <table id="resultsTable">
+          <thead>
+            <tr>
+              <th style="text-align: center;">Item</th>
+              <th>Compra (Origem)</th>
+              <th>Venda (Caerleon)</th>
+              <th>Qtd. Recomendada</th>
+              <th>Investimento Total</th>
+              <th>Lucro Líquido</th>
+              <th>Atualização</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Banco de Dados Expandido cobrindo grande parte do mercado
+    const ITEM_DATABASE = [
+      // ARMAS - ESPADAS
+      { baseId: "MAIN_SWORD", name: "Espada Larga", category: "WEAPON" },
+      { baseId: "2H_CLAYMORE", name: "Claymore", category: "WEAPON" },
+      { baseId: "2H_DUALSWORDS", name: "Espadas Duplas", category: "WEAPON" },
+      { baseId: "2H_CLEAVER_HELL", name: "Lâminas Escaldantes", category: "WEAPON" },
+      // ARMAS - CAJADOS
+      { baseId: "MAIN_DOUBLEBLADEDSTAFF", name: "Cajado de Garrote", category: "WEAPON" },
+      { baseId: "2H_COMBATSTAFF", name: "Cajado de Monge", category: "WEAPON" },
+      { baseId: "MAIN_CURSEDSTAFF", name: "Cajado Amaldiçoado", category: "WEAPON" },
+      { baseId: "2H_CURSEDSTAFF", name: "Cajado Amaldiçoado Grande", category: "WEAPON" },
+      { baseId: "MAIN_FIRESTAFF", name: "Cajado de Fogo", category: "WEAPON" },
+      { baseId: "2H_INFERNOSTAFF", name: "Cajado Infernal", category: "WEAPON" },
+      { baseId: "MAIN_FROSTSTAFF", name: "Cajado de Gelo", category: "WEAPON" },
+      { baseId: "MAIN_ARCANESTAFF", name: "Cajado Arcano", category: "WEAPON" },
+      { baseId: "MAIN_HOLYSTAFF", name: "Cajado Sagrado", category: "WEAPON" },
+      { baseId: "MAIN_NATURESTAFF", name: "Cajado da Natureza", category: "WEAPON" },
+      // ARMAS - ARCOS & ADAGAS
+      { baseId: "2H_BOW", name: "Arco", category: "WEAPON" },
+      { baseId: "2H_WARBOW", name: "Arco de Guerra", category: "WEAPON" },
+      { baseId: "2H_LONGBOW", name: "Arco Longo", category: "WEAPON" },
+      { baseId: "2H_CROSSBOW", name: "Besta", category: "WEAPON" },
+      { baseId: "2H_CROSSBOWLARGE", name: "Besta Leve", category: "WEAPON" },
+      { baseId: "2H_CLAWPAIR", name: "Garras", category: "WEAPON" },
+      { baseId: "MAIN_DAGGER", name: "Adaga", category: "WEAPON" },
+      { baseId: "2H_DAGGERPAIR", name: "Par de Adagas", category: "WEAPON" },
+      { baseId: "2H_DUALSPEAR", name: "Lança Dupla", category: "WEAPON" },
+      { baseId: "MAIN_SPEAR", name: "Lança", category: "WEAPON" },
+      { baseId: "2H_AXE", name: "Machado Grande", category: "WEAPON" },
+      { baseId: "2H_HALBERD", name: "Alabarda", category: "WEAPON" },
+      { baseId: "2H_MACE", name: "Maça Grande", category: "WEAPON" },
+      { baseId: "2H_HAMMER", name: "Martelo Grande", category: "WEAPON" },
+
+      // ARMADURAS - COURO
+      { baseId: "HEAD_LEATHER_SET1", name: "Capote de Caçador", category: "ARMOR" },
+      { baseId: "ARMOR_LEATHER_SET1", name: "Chaqueta de Caçador", category: "ARMOR" },
+      { baseId: "SHOES_LEATHER_SET1", name: "Botas de Caçador", category: "ARMOR" },
+      { baseId: "HEAD_LEATHER_SET2", name: "Capote de Assassino", category: "ARMOR" },
+      { baseId: "ARMOR_LEATHER_SET2", name: "Chaqueta de Assassino", category: "ARMOR" },
+      { baseId: "SHOES_LEATHER_SET2", name: "Botas de Assassino", category: "ARMOR" },
+      { baseId: "HEAD_LEATHER_SET3", name: "Capote de Mercenário", category: "ARMOR" },
+      { baseId: "ARMOR_LEATHER_SET3", name: "Chaqueta de Mercenário", category: "ARMOR" },
+      { baseId: "SHOES_LEATHER_SET3", name: "Botas de Mercenário", category: "ARMOR" },
+
+      // ARMADURAS - PANO
+      { baseId: "HEAD_CLOTH_SET1", name: "Capuz de Mago", category: "ARMOR" },
+      { baseId: "ARMOR_CLOTH_SET1", name: "Robe de Mago", category: "ARMOR" },
+      { baseId: "SHOES_CLOTH_SET1", name: "Sandálias de Mago", category: "ARMOR" },
+      { baseId: "HEAD_CLOTH_SET2", name: "Capuz de Clérigo", category: "ARMOR" },
+      { baseId: "ARMOR_CLOTH_SET2", name: "Robe de Clérigo", category: "ARMOR" },
+      { baseId: "SHOES_CLOTH_SET2", name: "Sandálias de Clérigo", category: "ARMOR" },
+      { baseId: "HEAD_CLOTH_SET3", name: "Capuz de Erudito", category: "ARMOR" },
+      { baseId: "ARMOR_CLOTH_SET3", name: "Robe de Erudito", category: "ARMOR" },
+      { baseId: "SHOES_CLOTH_SET3", name: "Sandálias de Erudito", category: "ARMOR" },
+
+      // ARMADURAS - PLACA
+      { baseId: "HEAD_PLATE_SET1", name: "Yelmo de Soldado", category: "ARMOR" },
+      { baseId: "ARMOR_PLATE_SET1", name: "Peitoral de Soldado", category: "ARMOR" },
+      { baseId: "SHOES_PLATE_SET1", name: "Botas de Soldado", category: "ARMOR" },
+      { baseId: "HEAD_PLATE_SET2", name: "Yelmo de Cavaleiro", category: "ARMOR" },
+      { baseId: "ARMOR_PLATE_SET2", name: "Peitoral de Cavaleiro", category: "ARMOR" },
+      { baseId: "SHOES_PLATE_SET2", name: "Botas de Cavaleiro", category: "ARMOR" },
+      { baseId: "HEAD_PLATE_SET3", name: "Yelmo de Guardião", category: "ARMOR" },
+      { baseId: "ARMOR_PLATE_SET3", name: "Peitoral de Guardião", category: "ARMOR" },
+      { baseId: "SHOES_PLATE_SET3", name: "Botas de Guardião", category: "ARMOR" },
+
+      // ACESSÓRIOS & CAPAS
+      { baseId: "BAG", name: "Mochila", category: "ACCESSORY", noEnchant: true },
+      { baseId: "CAPE", name: "Capa Comum", category: "ACCESSORY", noEnchant: true },
+      { baseId: "CAPEITEM_FW_CAERLEON", name: "Capa de Caerleon", category: "ACCESSORY" },
+      { baseId: "CAPEITEM_FW_BRIDGEWATCH", name: "Capa de Bridgewatch", category: "ACCESSORY" },
+      { baseId: "CAPEITEM_FW_FORTSTERLING", name: "Capa de Fort Sterling", category: "ACCESSORY" },
+      { baseId: "CAPEITEM_FW_LYMHURST", name: "Capa de Lymhurst", category: "ACCESSORY" },
+      { baseId: "CAPEITEM_FW_MARTLOCK", name: "Capa de Martlock", category: "ACCESSORY" },
+      { baseId: "CAPEITEM_FW_THETFORD", name: "Capa de Thetford", category: "ACCESSORY" },
+
+      // MONTARIAS
+      { baseId: "MOUNT_HORSE", name: "Cavalo de Montaria", category: "MOUNT", noEnchant: true },
+      { baseId: "MOUNT_COW", name: "Boi de Carga", category: "MOUNT", noEnchant: true },
+      { baseId: "MOUNT_SWIFTCLAW", name: "Garra-rápida", category: "MOUNT", fixedTier: "T5", noEnchant: true },
+      { baseId: "MOUNT_DIREWOLF", name: "Lobo do Terror", category: "MOUNT", fixedTier: "T8", noEnchant: true },
+      { baseId: "MOUNT_ARMORED_HORSE", name: "Cavalo Blindado", category: "MOUNT", noEnchant: true },
+
+      // CONSUMÍVEIS
+      { baseId: "POTION_HEAL", name: "Poção de Cura", category: "CONSUMABLE", noEnchant: true },
+      { baseId: "POTION_ENERGY", name: "Poção de Energia", category: "CONSUMABLE", noEnchant: true },
+      { baseId: "POTION_POISON", name: "Poção de Veneno", category: "CONSUMABLE", noEnchant: true },
+      { baseId: "MEATPIE", name: "Torta de Carne", category: "CONSUMABLE", fixedTier: "T6", noEnchant: true },
+      { baseId: "STEW", name: "Ensopado de Carne", category: "CONSUMABLE", fixedTier: "T7", noEnchant: true },
+      { baseId: "SANDWICH", name: "Sanduíche de Carne", category: "CONSUMABLE", fixedTier: "T6", noEnchant: true },
+
+      // RECURSOS REFINADOS
+      { baseId: "PLANKS", name: "Tábuas de Madeira", category: "RESOURCE" },
+      { baseId: "METALBAR", name: "Barras de Metal", category: "RESOURCE" },
+      { baseId: "LEATHER", name: "Couro Trabalhado", category: "RESOURCE" },
+      { baseId: "CLOTH", name: "Tecido", category: "RESOURCE" },
+      { baseId: "STONEBLOCK", name: "Bloco de Pedra", category: "RESOURCE", noEnchant: true }
+    ];
+
+    function buildItemQueries() {
+      const nameQuery = document.getElementById("searchName").value.toLowerCase().trim();
+      const categoryFilter = document.getElementById("category").value;
+      const tierFilter = document.getElementById("tier").value;
+      const enchantFilter = document.getElementById("enchantment").value;
+
+      const tiers = tierFilter === "ALL" ? ["T4", "T5", "T6", "T7", "T8"] : [tierFilter];
+      const enchants = enchantFilter === "ALL" ? ["0", "1", "2", "3"] : [enchantFilter];
+
+      const itemIds = [];
+
+      ITEM_DATABASE.forEach(item => {
+        // Filtra por nome em Português ou código do ID
+        const matchName = item.name.toLowerCase().includes(nameQuery);
+        const matchId = item.baseId.toLowerCase().includes(nameQuery);
+        if (nameQuery && !matchName && !matchId) return;
+        
+        if (categoryFilter !== "ALL" && item.category !== categoryFilter) return;
+
+        const activeTiers = item.fixedTier ? [item.fixedTier] : tiers;
+
+        activeTiers.forEach(tier => {
+          if (item.noEnchant) {
+            itemIds.push(`${tier}_${item.baseId}`);
+          } else {
+            enchants.forEach(enc => {
+              const fullId = enc === "0" 
+                ? `${tier}_${item.baseId}` 
+                : `${tier}_${item.baseId}@${enc}`;
+              itemIds.push(fullId);
+            });
+          }
+        });
+      });
+
+      return itemIds;
+    }
+
+    async function runScanner() {
+      const server = document.getElementById("server").value;
+      const sourceCity = document.getElementById("sourceCity").value;
+      const budget = parseFloat(document.getElementById("budget").value);
+      const quality = document.getElementById("quality").value;
+      const hasPremium = document.getElementById("hasPremium").checked;
+      const taxRate = hasPremium ? 0.04 : 0.08;
+      const targetCity = "Caerleon";
+
+      const statusEl = document.getElementById("status");
+      const resultsPanel = document.getElementById("resultsPanel");
+      const tbody = document.getElementById("resultsBody");
+
+      if (isNaN(budget) || budget <= 0) {
+        alert("Digite um valor válido de orçamento.");
+        return;
+      }
+
+      const itemIds = buildItemQueries();
+
+      if (itemIds.length === 0) {
+        alert("Nenhum item encontrado para os filtros selecionados.");
+        return;
+      }
+
+      statusEl.innerText = `Buscando cotações de ${itemIds.length} variações no Albion Data Project...`;
+      tbody.innerHTML = "";
+      resultsPanel.classList.add("hidden");
+
+      // Divide a lista em pacotes de no máximo 80 itens por chamada à API
+      const BATCH_SIZE = 80;
+      const batches = [];
+      for (let i = 0; i < itemIds.length; i += BATCH_SIZE) {
+        batches.push(itemIds.slice(i, i + BATCH_SIZE));
+      }
+
+      const baseUrl = `https://${server}.albion-online-data.com/api/v2/stats/prices/`;
+      const marketData = {};
+
+      try {
+        // Dispara requisições paralelas para buscar todos os pacotes
+        const requests = batches.map(batch => {
+          const itemString = batch.join(",");
+          const requestUrl = `${baseUrl}${itemString}.json?locations=${sourceCity},${targetCity}&qualities=${quality}`;
+          return fetch(requestUrl).then(res => res.ok ? res.json() : []);
+        });
+
+        const resultsArray = await Promise.all(requests);
+        
+        // Consolida o retorno de todos os pacotes
+        resultsArray.flat().forEach(entry => {
+          if (!marketData[entry.item_id]) {
+            marketData[entry.item_id] = { 
+              sourcePrice: 0, 
+              caerleonSellPrice: 0,
+              updatedAt: null 
+            };
+          }
+
+          if (entry.city === sourceCity) {
+            marketData[entry.item_id].sourcePrice = entry.sell_price_min;
+          } else if (entry.city === targetCity) {
+            marketData[entry.item_id].caerleonSellPrice = entry.sell_price_min;
+            marketData[entry.item_id].updatedAt = entry.sell_price_min_date;
+          }
+        });
+
+        const opportunities = [];
+
+        for (const itemId in marketData) {
+          const buyPrice = marketData[itemId].sourcePrice;
+          const sellPrice = marketData[itemId].caerleonSellPrice;
+
+          if (buyPrice > 0 && sellPrice > 0 && buyPrice <= budget) {
+            const netSellPrice = sellPrice * (1 - taxRate);
+            const profitPerUnit = netSellPrice - buyPrice;
+
+            if (profitPerUnit > 0) {
+              const maxUnits = Math.floor(budget / buyPrice);
+              const totalInvestment = maxUnits * buyPrice;
+              const totalProfit = maxUnits * profitPerUnit;
+
+              opportunities.push({
+                id: itemId,
+                buyPrice,
+                sellPrice,
+                maxUnits,
+                totalInvestment,
+                totalProfit,
+                updatedAt: marketData[itemId].updatedAt
+              });
+            }
+          }
+        }
+
+        opportunities.sort((a, b) => b.totalProfit - a.totalProfit);
+
+        resultsPanel.classList.remove("hidden");
+
+        if (opportunities.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Nenhuma oportunidade lucrativa encontrada no momento para os filtros e orçamento configurados.</td></tr>`;
+          statusEl.innerText = "Varredura concluída.";
+          return;
+        }
+
+        opportunities.forEach(item => {
+          const tr = document.createElement("tr");
+          const imgUrl = `https://render.albiononline.com/v1/item/${item.id}.png?quality=${quality}`;
+          const timeAgo = formatTimeAgo(item.updatedAt);
+
+          tr.innerHTML = `
+            <td style="text-align: center;">
+              <div class="item-cell">
+                <img class="item-icon" src="${imgUrl}" alt="${item.id}" loading="lazy">
+              </div>
+            </td>
+            <td>${item.buyPrice.toLocaleString()} Silver</td>
+            <td>${item.sellPrice.toLocaleString()} Silver</td>
+            <td><strong>${item.maxUnits.toLocaleString()}x</strong></td>
+            <td>${item.totalInvestment.toLocaleString()} Silver</td>
+            <td class="profit">+${Math.round(item.totalProfit).toLocaleString()} Silver</td>
+            <td class="time-info">${timeAgo}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        statusEl.innerText = `Varredura concluída! ${opportunities.length} oportunidades encontradas.`;
+
+      } catch (error) {
+        console.error(error);
+        statusEl.innerText = "Erro ao conectar com a API do Albion Data. Tente novamente mais tarde.";
+      }
+    }
+
+    function formatTimeAgo(dateString) {
+      if (!dateString || dateString.startsWith("0001")) return "Sem registro";
+      const date = new Date(dateString);
+      const diffMinutes = Math.floor((new Date() - date) / 60000);
+
+      if (diffMinutes < 1) return "Agora";
+      if (diffMinutes < 60) return `Há ${diffMinutes} min`;
+      const diffHours = Math.floor(diffMinutes / 60);
+      if (diffHours < 24) return `Há ${diffHours} h`;
+      return `Há ${Math.floor(diffHours / 24)} d`;
+    }
+  </script>
+</body>
+</html>
+
+
+
+
